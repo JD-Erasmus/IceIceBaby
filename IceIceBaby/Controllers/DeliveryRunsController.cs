@@ -26,7 +26,7 @@ public class DeliveryRunsController : Controller
         _db = db;
     }
 
-    private async Task LoadLookupsAsync()
+    private async Task LoadLookupsAsync(IEnumerable<int>? selectedOrderIds = null)
     {
         ViewBag.Drivers = await _db.Drivers
             .OrderBy(d => d.Name)
@@ -42,6 +42,8 @@ public class DeliveryRunsController : Controller
             .Select(o => o.Id)
             .ToListAsync();
         var alreadyInStops = await _db.DeliveryStops.Select(s => s.OrderId).ToListAsync();
+        var selectedSet = selectedOrderIds != null ? selectedOrderIds.ToHashSet() : new HashSet<int>();
+
         var openOrders = await _db.Orders
             .Where(o => eligibleOrderIds.Contains(o.Id) && !alreadyInStops.Contains(o.Id))
             .Include(o => o.Customer)
@@ -49,7 +51,8 @@ public class DeliveryRunsController : Controller
             .Select(o => new SelectListItem
             {
                 Value = o.Id.ToString(),
-                Text = $"{o.OrderNo} - {o.Customer!.Name} ({o.Subtotal:C})"
+                Text = $"{o.OrderNo} - {o.Customer!.Name} ({o.Subtotal:C})",
+                Selected = selectedSet.Contains(o.Id)
             })
             .ToListAsync();
         ViewBag.OpenOrders = openOrders;
@@ -63,10 +66,43 @@ public class DeliveryRunsController : Controller
     }
 
     // GET: /DeliveryRuns/Create
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(int? orderId)
     {
-        await LoadLookupsAsync();
-        return View(new CreateRunDto { RunDate = DateOnly.FromDateTime(DateTime.Now) });
+        var vm = new CreateRunDto { RunDate = DateOnly.FromDateTime(DateTime.Now) };
+        if (orderId.HasValue)
+        {
+            var eligible = await _db.Orders
+                .Where(o => o.Id == orderId.Value && o.Status == OrderStatus.Confirmed)
+                .Select(o => o.Id)
+                .FirstOrDefaultAsync();
+            var alreadyInRun = await _db.DeliveryStops.AnyAsync(s => s.OrderId == orderId.Value);
+            if (eligible != 0 && !alreadyInRun)
+            {
+                vm.OrderIds.Add(orderId.Value);
+            }
+        }
+        await LoadLookupsAsync(vm.OrderIds);
+        return View(vm);
+    }
+
+    // POST: /DeliveryRuns/Start/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Start(int id)
+    {
+        var ok = await _runs.SetStatusAsync(id, DeliveryRunStatus.InProgress, HttpContext.RequestAborted);
+        if (!ok) TempData["Error"] = "Unable to start run.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // POST: /DeliveryRuns/Complete/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Complete(int id)
+    {
+        var ok = await _runs.SetStatusAsync(id, DeliveryRunStatus.Completed, HttpContext.RequestAborted);
+        if (!ok) TempData["Error"] = "Unable to complete run.";
+        return RedirectToAction(nameof(Index));
     }
 
     // POST: /DeliveryRuns/Create
@@ -76,7 +112,7 @@ public class DeliveryRunsController : Controller
     {
         if (!ModelState.IsValid)
         {
-            await LoadLookupsAsync();
+            await LoadLookupsAsync(dto.OrderIds);
             return View(dto);
         }
         try

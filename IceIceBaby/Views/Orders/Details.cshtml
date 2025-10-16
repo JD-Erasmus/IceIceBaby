@@ -11,6 +11,10 @@
     <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-outline-primary" asp-controller="Orders" asp-action="Index">Back to Orders</a>
         <a class="btn btn-primary" href="@Url.Action("Invoice", new { id = Model.Id })">View Invoice</a>
+        @if (Model.Status == IceIceBaby.Models.OrderStatus.Confirmed)
+        {
+            <a class="btn btn-success" href="@Url.Action("Create", "DeliveryRuns", new { orderId = Model.Id })">Create Run with this Order</a>
+        }
     </div>
 </section>
 

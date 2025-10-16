@@ -8,7 +8,10 @@
         <h1 class="page-title mb-1">Orders</h1>
         <p class="text-muted mb-0">Organise orders by status and jump straight into fulfilment.</p>
     </div>
-    <a class="btn btn-primary" asp-controller="Orders" asp-action="Create">Create Order</a>
+    <div class="d-flex gap-2">
+        <a class="btn btn-primary" asp-controller="Orders" asp-action="Create">Create Order</a>
+        <a class="btn btn-outline-primary" asp-controller="DeliveryRuns" asp-action="Create">Create Run</a>
+    </div>
 </section>
 
 <section class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">

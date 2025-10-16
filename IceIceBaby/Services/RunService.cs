@@ -48,7 +48,7 @@ public class RunService : IRunService
         => _db.DeliveryRuns.Include(r => r.Stops).ThenInclude(s => s.Order).FirstOrDefaultAsync(r => r.Id == id, ct);
 
     public Task<List<DeliveryRun>> ListRunsAsync(CancellationToken ct = default)
-        => _db.DeliveryRuns.OrderByDescending(r => r.RunDate).ToListAsync(ct);
+        => _db.DeliveryRuns.Include(r => r.Stops).OrderByDescending(r => r.RunDate).ToListAsync(ct);
 
     public async Task<bool> MarkDeliveredAsync(int runId, int orderId, DateTimeOffset when, string? podNote, string? podPhotoPath, CancellationToken ct = default)
     {
@@ -96,6 +96,37 @@ public class RunService : IRunService
             Seq = nextSeq
         });
         order.Status = OrderStatus.OutForDelivery;
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> SetStatusAsync(int runId, DeliveryRunStatus status, CancellationToken ct = default)
+    {
+        var run = await _db.DeliveryRuns.FirstOrDefaultAsync(r => r.Id == runId, ct);
+        if (run == null) return false;
+
+        // Simple guard: allow forward transitions only
+        var current = run.Status;
+        if (current == status) return true;
+        if (current == DeliveryRunStatus.Completed) return false;
+        if (current == DeliveryRunStatus.New && status == DeliveryRunStatus.Completed)
+        {
+            // allow direct complete if it makes sense in this simple flow
+            run.Status = DeliveryRunStatus.Completed;
+        }
+        else if (current == DeliveryRunStatus.New && status == DeliveryRunStatus.InProgress)
+        {
+            run.Status = DeliveryRunStatus.InProgress;
+        }
+        else if (current == DeliveryRunStatus.InProgress && status == DeliveryRunStatus.Completed)
+        {
+            run.Status = DeliveryRunStatus.Completed;
+        }
+        else
+        {
+            return false;
+        }
+
         await _db.SaveChangesAsync(ct);
         return true;
     }

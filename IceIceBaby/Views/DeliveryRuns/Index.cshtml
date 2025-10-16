@@ -1,3 +1,4 @@
+@model IEnumerable<IceIceBaby.Models.DeliveryRun>
 @{
     ViewData["Title"] = "Delivery Runs";
 }
@@ -11,7 +12,52 @@
 </section>
 
 <section class="card border-0 shadow-soft p-4">
-    <h5 class="mb-3">Upcoming and in-progress runs</h5>
-    <p class="text-muted mb-4">Detailed scheduling and telemetry will render here in a later iteration.</p>
-    <div class="alert alert-info mb-0">Integrate your logistics data sources to populate this space with live routes.</div>
+    <h5 class="mb-3">Runs</h5>
+    <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Run #</th>
+                    <th>Date</th>
+                    <th>Driver</th>
+                    <th>Vehicle</th>
+                    <th>Status</th>
+                    <th class="text-end">Stops</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.OrderByDescending(r => r.Status == IceIceBaby.Models.DeliveryRunStatus.InProgress)
+                                           .ThenByDescending(r => r.Status == IceIceBaby.Models.DeliveryRunStatus.New)
+                                           .ThenByDescending(r => r.RunDate))
+                {
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>@r.RunDate.ToString("yyyy-MM-dd")</td>
+                        <td>@r.DriverName</td>
+                        <td>@r.Vehicle</td>
+                        <td>@r.Status</td>
+                        <td class="text-end">@r.Stops?.Count()</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@r.Id">View</a>
+                            @if (r.Status == IceIceBaby.Models.DeliveryRunStatus.New)
+                            {
+                                <form asp-action="Start" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@r.Id" />
+                                    <button type="submit" class="btn btn-sm btn-success">Start</button>
+                                </form>
+                            }
+                            else if (r.Status == IceIceBaby.Models.DeliveryRunStatus.InProgress)
+                            {
+                                <form asp-action="Complete" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@r.Id" />
+                                    <button type="submit" class="btn btn-sm btn-secondary">Complete</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </section>

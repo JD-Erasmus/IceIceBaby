@@ -9,4 +9,5 @@ public interface IRunService
     Task<List<DeliveryRun>> ListRunsAsync(CancellationToken ct = default);
     Task<bool> MarkDeliveredAsync(int runId, int orderId, DateTimeOffset when, string? podNote, string? podPhotoPath, CancellationToken ct = default);
     Task<bool> AddOrderAsync(int runId, int orderId, CancellationToken ct = default);
+    Task<bool> SetStatusAsync(int runId, DeliveryRunStatus status, CancellationToken ct = default);
 }
