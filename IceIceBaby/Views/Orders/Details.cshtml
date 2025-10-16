@@ -1,0 +1,51 @@
+@model IceIceBaby.Models.Order
+@{
+    ViewData["Title"] = "Order Details";
+}
+<div class="d-flex justify-content-between align-items-center">
+    <h1 class="mb-0">Order @Model.OrderNo</h1>
+    <div>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index", "Orders")">Back to Orders</a>
+        <a class="btn btn-outline-primary" href="@Url.Action("Invoice", new { id = Model.Id })">View Invoice</a>
+    </div>
+</div>
+<div class="mb-3 text-muted">Customer: @Model.Customer?.Name | Status: @Model.Status | Subtotal: @Model.Subtotal.ToString("C")</div>
+
+<table class="table table-sm table-striped">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th class="text-end">Qty</th>
+            <th class="text-end">Unit</th>
+            <th class="text-end">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var i in Model.Items)
+        {
+            <tr>
+                <td>@i.Product?.Name (@i.ProductId)</td>
+                <td class="text-end">@i.Qty</td>
+                <td class="text-end">@i.UnitPriceSnapshot.ToString("C")</td>
+                <td class="text-end">@i.LineTotal.ToString("C")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="d-flex gap-2">
+    @if (Model.Status == IceIceBaby.Models.OrderStatus.New || Model.Status == IceIceBaby.Models.OrderStatus.Confirmed)
+    {
+        <form asp-action="Confirm" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-primary" type="submit">Confirm</button>
+        </form>
+    }
+    @if (Model.Status != IceIceBaby.Models.OrderStatus.Delivered)
+    {
+        <form asp-action="Cancel" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-outline-danger" type="submit">Cancel</button>
+        </form>
+    }
+</div>
