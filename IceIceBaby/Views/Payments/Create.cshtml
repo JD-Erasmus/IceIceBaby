@@ -1,9 +1,16 @@
 @{
     ViewData["Title"] = "Record Payment";
 }
-<h1>Record Payment</h1>
-<p class="text-muted">Payment form placeholder.</p>
-<form asp-action="Create" method="post">
-    <button type="submit" class="btn btn-success">Save (stub)</button>
-    <a class="btn btn-secondary" href="@Url.Action("Index", "Payments")">Cancel</a>
+
+<section class="mb-4">
+    <h1 class="page-title mb-1">Record a payment</h1>
+    <p class="text-muted mb-0">Log payment information while finance integrations are being finalised.</p>
+</section>
+
+<form asp-action="Create" method="post" class="card border-0 shadow-soft p-4">
+    <div class="alert alert-info">Payment capture workflows are forthcoming. Use this stub to simulate finance reconciliation.</div>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-success">Save (stub)</button>
+        <a class="btn btn-outline-primary" asp-controller="Payments" asp-action="Index">Cancel</a>
+    </div>
 </form>

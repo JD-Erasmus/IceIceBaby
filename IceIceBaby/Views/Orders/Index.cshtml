@@ -2,23 +2,27 @@
 @{
     ViewData["Title"] = "Orders";
 }
-<h1>Orders</h1>
-<div class="mb-3">
-    <a class="btn btn-primary" href="@Url.Action("Create", "Orders")">Create Order</a>
-</div>
 
-<div class="row row-cols-1 row-cols-md-4 g-3">
+<section class="mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+        <h1 class="page-title mb-1">Orders</h1>
+        <p class="text-muted mb-0">Organise orders by status and jump straight into fulfilment.</p>
+    </div>
+    <a class="btn btn-primary" asp-controller="Orders" asp-action="Create">Create Order</a>
+</section>
+
+<section class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
     @foreach (var group in Model.GroupBy(o => o.Status).OrderBy(g => g.Key))
     {
         <div class="col">
             <div class="card h-100">
-                <div class="card-header fw-bold">@group.Key</div>
+                <div class="card-header fw-bold text-uppercase small">@group.Key</div>
                 <div class="list-group list-group-flush">
                     @foreach (var o in group)
                     {
                         <a class="list-group-item list-group-item-action" href="@Url.Action("Details", new { id = o.Id })">
-                            <div class="d-flex justify-content-between">
-                                <span>@o.OrderNo</span>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold">@o.OrderNo</span>
                                 <span class="text-muted">@o.Subtotal.ToString("C")</span>
                             </div>
                             <div class="small text-muted">@o.Customer?.Name</div>
@@ -28,4 +32,4 @@
             </div>
         </div>
     }
-</div>
+</section>

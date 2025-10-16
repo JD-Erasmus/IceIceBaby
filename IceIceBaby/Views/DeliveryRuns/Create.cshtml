@@ -1,12 +1,18 @@
 @model IceIceBaby.Models.DTOs.CreateRunDto
 @{
-    ViewData["Title"] = "Create Run";
+    ViewData["Title"] = "Create Delivery Run";
     var drivers = ViewBag.Drivers as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
     var vehicles = ViewBag.Vehicles as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
     var openOrders = ViewBag.OpenOrders as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
 }
-<h1>Create Delivery Run</h1>
-<form asp-action="Create" method="post" class="card p-3">
+
+<section class="mb-4">
+    <h1 class="page-title mb-1">Plan a delivery run</h1>
+    <p class="text-muted mb-0">Assign a driver, vehicle, and confirm the orders to include in this route.</p>
+</section>
+
+<form asp-action="Create" method="post" class="card border-0 shadow-soft p-4">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="row g-3">
         <div class="col-sm-4">
             <label asp-for="RunDate" class="form-label">Run Date</label>
@@ -24,24 +30,24 @@
         </div>
     </div>
 
-    <hr />
-    <div class="mb-3">
-        <label class="form-label">Select Confirmed Orders</label>
+    <div class="mt-4">
+        <label class="form-label fw-semibold">Select Confirmed Orders</label>
         <select name="OrderIds" multiple class="form-select" size="8">
             @foreach (var o in openOrders)
             {
                 <option value="@o.Value">@o.Text</option>
             }
         </select>
-        <div class="form-text">Hold Ctrl/Cmd to select multiple.</div>
+        <div class="form-text">Hold Ctrl/Cmd to select multiple orders for this run.</div>
         <span asp-validation-for="OrderIds" class="text-danger"></span>
     </div>
 
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2 mt-4">
         <button type="submit" class="btn btn-success">Create Run</button>
-        <a class="btn btn-secondary" href="@Url.Action("Index", "DeliveryRuns")">Cancel</a>
+        <a class="btn btn-outline-primary" asp-controller="DeliveryRuns" asp-action="Index">Cancel</a>
     </div>
 </form>
+
 @section Scripts{
     <partial name="_ValidationScriptsPartial" />
 }
