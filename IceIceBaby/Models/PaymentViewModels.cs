@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using IceIceBaby.Models.DTOs;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace IceIceBaby.Models;
 
@@ -14,5 +15,6 @@ public class OrderHistoryViewModel
     public OrderHistoryFilter Filter { get; set; } = new();
     public List<Order> Results { get; set; } = new();
     public int TotalMatches { get; set; }
+    public List<SelectListItem> Customers { get; set; } = new();
 }
 

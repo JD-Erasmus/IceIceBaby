@@ -1,13 +1,18 @@
 @model IceIceBaby.Models.OrderHistoryViewModel
 @using IceIceBaby.Models
 @using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Linq
 @{
     ViewData["Title"] = "Order History";
-    var statuses = Html.GetEnumSelectList<OrderStatus>().ToList();
-    foreach (var status in statuses)
-    {
-        status.Selected = string.Equals(Model.Filter.Status, status.Value, StringComparison.OrdinalIgnoreCase);
-    }
+    var statuses = Enum.GetValues(typeof(OrderStatus))
+        .Cast<OrderStatus>()
+        .Select(s => new SelectListItem
+        {
+            Value = s.ToString(),
+            Text = s.ToString(),
+            Selected = string.Equals(Model.Filter.Status, s.ToString(), StringComparison.OrdinalIgnoreCase)
+        })
+        .ToList();
     string DisplayDate(IceIceBaby.Models.Order order)
     {
         return order.PromisedAt?.ToLocalTime().ToString("g")
@@ -26,31 +31,51 @@
 </section>
 
 <form method="get" class="card border-0 shadow-soft p-4 mb-4">
-    <div class="row g-3 align-items-end">
-        <div class="col-sm-3">
+    <div class="row g-3">
+        <div class="col-md-6">
             <label class="form-label" for="filter-order">Order no</label>
             <input class="form-control" id="filter-order" name="order" value="@Model.Filter.Order" placeholder="161025-001" />
         </div>
-        <div class="col-sm-3">
-            <label class="form-label" for="filter-customer">Customer</label>
-            <input class="form-control" id="filter-customer" name="customer" value="@Model.Filter.Customer" placeholder="Search name" />
-        </div>
-        <div class="col-sm-3">
-            <label class="form-label" asp-for="Filter.Status">Status</label>
-            <select class="form-select" asp-for="Filter.Status" asp-items="statuses">
-                <option value="">Any</option>
-            </select>
-        </div>
-        <div class="col-sm-3">
-            <label class="form-label" for="filter-from">Date range</label>
-            <div class="d-flex gap-2">
-                <input type="date" class="form-control" id="filter-from" name="from" value="@Model.Filter.From" />
-                <input type="date" class="form-control" id="filter-to" name="to" value="@Model.Filter.To" />
+        <div class="col-md-6">
+            <label class="form-label" for="customer-search">Customer</label>
+            <div class="d-flex flex-column gap-2">
+                <input type="search" class="form-control" id="customer-search" value="@Model.Filter.Customer" placeholder="Type to filter customers" autocomplete="off" />
+                <select class="form-select" id="customer-select" name="customer">
+                    <option value="">Any</option>
+                    @foreach (var customer in Model.Customers)
+                    {
+                        if (customer.Selected)
+                        {
+                            <option value="@customer.Value" data-name="@customer.Text" selected="selected">@customer.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@customer.Value" data-name="@customer.Text">@customer.Text</option>
+                        }
+                    }
+                </select>
             </div>
         </div>
-        <div class="col-12 col-md-auto">
-            <button type="submit" class="btn btn-primary">Apply</button>
+    </div>
+    <div class="row g-3 mt-1 align-items-start">
+        <div class="col-md-6">
+            <label class="form-label" for="filter-status">Status</label>
+            @Html.DropDownList("status", statuses, "Any", new { @class = "form-select", id = "filter-status" })
         </div>
+        <div class="col-md-6">
+            <label class="form-label" for="filter-from">Date range</label>
+            <div class="row g-2">
+                <div class="col">
+                    <input type="date" class="form-control" id="filter-from" name="from" value="@Model.Filter.From" />
+                </div>
+                <div class="col">
+                    <input type="date" class="form-control" id="filter-to" name="to" value="@Model.Filter.To" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex justify-content-end mt-3">
+        <button type="submit" class="btn btn-primary">Apply filters</button>
     </div>
 </form>
 
@@ -102,4 +127,60 @@
         <div class="alert alert-info mb-0">No orders were found for the selected filters.</div>
     }
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            const search = document.getElementById('customer-search');
+            const select = document.getElementById('customer-select');
+
+            let userInteracted = false;
+
+            function applyFilter(force = false) {
+                const query = (search.value || '').toLowerCase();
+                const shouldFilter = force || userInteracted;
+                let visibleCount = 0;
+                for (let i = 0; i < select.options.length; i++) {
+                    const option = select.options[i];
+                    if (!option.dataset.name) {
+                        option.hidden = false;
+                        continue;
+                    }
+                    const text = option.dataset.name.toLowerCase();
+                    const isMatch = !shouldFilter || !query || text.includes(query);
+                    option.hidden = !isMatch;
+                    if (isMatch) {
+                        visibleCount++;
+                    }
+                }
+
+                // If the current selection is hidden, reset to Any
+                if (select.selectedIndex > 0 && select.options[select.selectedIndex].hidden) {
+                    select.selectedIndex = 0;
+                }
+            }
+
+            if (search && select) {
+                search.addEventListener('input', () => {
+                    userInteracted = true;
+                    applyFilter(true);
+                });
+                search.addEventListener('focus', () => {
+                    userInteracted = true;
+                });
+                select.addEventListener('change', () => {
+                    const selected = select.options[select.selectedIndex];
+                    if (selected && selected.dataset && selected.dataset.name) {
+                        search.value = selected.dataset.name;
+                    } else if (select.selectedIndex === 0) {
+                        search.value = '';
+                    }
+                    userInteracted = false;
+                    applyFilter(false);
+                });
+                applyFilter(false);
+            }
+        })();
+    </script>
+}
 

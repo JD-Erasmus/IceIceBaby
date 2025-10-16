@@ -29,54 +29,50 @@ public class OrdersController : Controller
     }
 
     // GET: /Orders/History
-    public async Task<IActionResult> History([FromQuery] OrderHistoryFilter? filter)
+    public async Task<IActionResult> History(string? order, string? customer, string? status, DateOnly? from, DateOnly? to)
     {
-        filter ??= new OrderHistoryFilter();
+        var filter = new OrderHistoryFilter
+        {
+            Order = order,
+            Customer = customer,
+            Status = status,
+            From = from?.ToString("yyyy-MM-dd"),
+            To = to?.ToString("yyyy-MM-dd")
+        };
 
         var query = _db.Orders
             .Include(o => o.Customer)
             .AsNoTracking()
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(filter.Order))
+        if (!string.IsNullOrWhiteSpace(order))
         {
-            var term = filter.Order.Trim();
-            query = query.Where(o => EF.Functions.Like(o.OrderNo, $"%{term}%"));
+            var term = order.Trim();
+            query = query.Where(o => o.OrderNo.Contains(term));
         }
 
-        if (!string.IsNullOrWhiteSpace(filter.Customer))
+        if (!string.IsNullOrWhiteSpace(customer))
         {
-            var term = filter.Customer.Trim();
-            query = query.Where(o => o.Customer != null && EF.Functions.Like(o.Customer.Name, $"%{term}%"));
+            var term = customer.Trim();
+            query = query.Where(o => o.Customer != null && o.Customer.Name.Contains(term));
         }
 
-        if (!string.IsNullOrWhiteSpace(filter.Status) && Enum.TryParse<OrderStatus>(filter.Status, true, out var statusFilter))
+        if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<OrderStatus>(status, true, out var statusFilter))
         {
             query = query.Where(o => o.Status == statusFilter);
         }
 
-        DateTimeOffset? from = null;
-        DateTimeOffset? to = null;
-        if (DateOnly.TryParse(filter.From, out var fromDate))
-        {
-            var fromDateTime = DateTime.SpecifyKind(fromDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
-            from = new DateTimeOffset(fromDateTime);
-        }
-        if (DateOnly.TryParse(filter.To, out var toDate))
-        {
-            var toDateTime = DateTime.SpecifyKind(toDate.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Local);
-            to = new DateTimeOffset(toDateTime);
-        }
-
         if (from.HasValue)
         {
-            var fromValue = from.Value;
+            var fromDateTime = DateTime.SpecifyKind(from.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
+            var fromValue = new DateTimeOffset(fromDateTime);
             query = query.Where(o => (o.PromisedAt ?? o.PaidAt ?? DateTimeOffset.MinValue) >= fromValue);
         }
 
         if (to.HasValue)
         {
-            var toValue = to.Value;
+            var toDateTime = DateTime.SpecifyKind(to.Value.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Local);
+            var toValue = new DateTimeOffset(toDateTime);
             query = query.Where(o => (o.PromisedAt ?? o.PaidAt ?? DateTimeOffset.MaxValue) <= toValue);
         }
 
@@ -88,11 +84,22 @@ public class OrdersController : Controller
             .Take(100)
             .ToListAsync();
 
+        var customers = await _db.Customers
+            .OrderBy(c => c.Name)
+            .Select(c => new SelectListItem
+            {
+                Value = c.Name,
+                Text = c.Name,
+                Selected = !string.IsNullOrWhiteSpace(customer) && string.Equals(c.Name, customer, StringComparison.OrdinalIgnoreCase)
+            })
+            .ToListAsync();
+
         var vm = new OrderHistoryViewModel
         {
             Filter = filter,
             Results = results,
-            TotalMatches = totalMatches
+            TotalMatches = totalMatches,
+            Customers = customers
         };
 
         return View(vm);
