@@ -1,0 +1,105 @@
+@model IceIceBaby.Models.OrderHistoryViewModel
+@using IceIceBaby.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Order History";
+    var statuses = Html.GetEnumSelectList<OrderStatus>().ToList();
+    foreach (var status in statuses)
+    {
+        status.Selected = string.Equals(Model.Filter.Status, status.Value, StringComparison.OrdinalIgnoreCase);
+    }
+    string DisplayDate(IceIceBaby.Models.Order order)
+    {
+        return order.PromisedAt?.ToLocalTime().ToString("g")
+            ?? order.PaidAt?.ToLocalTime().ToString("g")
+            ?? "-";
+    }
+    var showingAll = Model.TotalMatches <= Model.Results.Count;
+}
+
+<section class="mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+        <h1 class="page-title mb-1">Order history</h1>
+        <p class="text-muted mb-0">Review past orders and drill into completed fulfilment.</p>
+    </div>
+    <a class="btn btn-outline-primary" asp-controller="Orders" asp-action="Index">Back to Orders</a>
+</section>
+
+<form method="get" class="card border-0 shadow-soft p-4 mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-sm-3">
+            <label class="form-label" for="filter-order">Order no</label>
+            <input class="form-control" id="filter-order" name="order" value="@Model.Filter.Order" placeholder="161025-001" />
+        </div>
+        <div class="col-sm-3">
+            <label class="form-label" for="filter-customer">Customer</label>
+            <input class="form-control" id="filter-customer" name="customer" value="@Model.Filter.Customer" placeholder="Search name" />
+        </div>
+        <div class="col-sm-3">
+            <label class="form-label" asp-for="Filter.Status">Status</label>
+            <select class="form-select" asp-for="Filter.Status" asp-items="statuses">
+                <option value="">Any</option>
+            </select>
+        </div>
+        <div class="col-sm-3">
+            <label class="form-label" for="filter-from">Date range</label>
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control" id="filter-from" name="from" value="@Model.Filter.From" />
+                <input type="date" class="form-control" id="filter-to" name="to" value="@Model.Filter.To" />
+            </div>
+        </div>
+        <div class="col-12 col-md-auto">
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </div>
+    </div>
+</form>
+
+<section class="card border-0 shadow-soft p-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h5 class="mb-0">Results (@Model.Results.Count of @Model.TotalMatches)</h5>
+        <div class="text-muted small">
+            Sorted by most recent activity.
+            @(showingAll ? "Showing all matches." : "Showing the latest 100 matches.")
+        </div>
+    </div>
+    @if (Model.Results.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>When</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Delivery</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model.Results)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@order.OrderNo</td>
+                            <td>@DisplayDate(order)</td>
+                            <td>@order.Customer?.Name</td>
+                            <td>@order.Status</td>
+                            <td>@order.DeliveryType</td>
+                            <td class="text-end">@order.Subtotal.ToString("C")</td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@order.Id">Details</a>
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="Invoice" asp-route-id="@order.Id">Invoice</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info mb-0">No orders were found for the selected filters.</div>
+    }
+</section>
+

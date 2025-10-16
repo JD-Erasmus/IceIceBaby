@@ -28,6 +28,76 @@ public class OrdersController : Controller
         return View(list);
     }
 
+    // GET: /Orders/History
+    public async Task<IActionResult> History([FromQuery] OrderHistoryFilter? filter)
+    {
+        filter ??= new OrderHistoryFilter();
+
+        var query = _db.Orders
+            .Include(o => o.Customer)
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter.Order))
+        {
+            var term = filter.Order.Trim();
+            query = query.Where(o => EF.Functions.Like(o.OrderNo, $"%{term}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Customer))
+        {
+            var term = filter.Customer.Trim();
+            query = query.Where(o => o.Customer != null && EF.Functions.Like(o.Customer.Name, $"%{term}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Status) && Enum.TryParse<OrderStatus>(filter.Status, true, out var statusFilter))
+        {
+            query = query.Where(o => o.Status == statusFilter);
+        }
+
+        DateTimeOffset? from = null;
+        DateTimeOffset? to = null;
+        if (DateOnly.TryParse(filter.From, out var fromDate))
+        {
+            var fromDateTime = DateTime.SpecifyKind(fromDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
+            from = new DateTimeOffset(fromDateTime);
+        }
+        if (DateOnly.TryParse(filter.To, out var toDate))
+        {
+            var toDateTime = DateTime.SpecifyKind(toDate.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Local);
+            to = new DateTimeOffset(toDateTime);
+        }
+
+        if (from.HasValue)
+        {
+            var fromValue = from.Value;
+            query = query.Where(o => (o.PromisedAt ?? o.PaidAt ?? DateTimeOffset.MinValue) >= fromValue);
+        }
+
+        if (to.HasValue)
+        {
+            var toValue = to.Value;
+            query = query.Where(o => (o.PromisedAt ?? o.PaidAt ?? DateTimeOffset.MaxValue) <= toValue);
+        }
+
+        var totalMatches = await query.CountAsync();
+
+        var results = await query
+            .OrderByDescending(o => o.PromisedAt ?? o.PaidAt ?? DateTimeOffset.MinValue)
+            .ThenByDescending(o => o.Id)
+            .Take(100)
+            .ToListAsync();
+
+        var vm = new OrderHistoryViewModel
+        {
+            Filter = filter,
+            Results = results,
+            TotalMatches = totalMatches
+        };
+
+        return View(vm);
+    }
+
     private async Task LoadLookupsAsync()
     {
         ViewBag.Customers = await _db.Customers
@@ -102,6 +172,36 @@ public class OrdersController : Controller
         var ok = await _orders.ConfirmAsync(id, rowVersion);
         if (!ok) TempData["Error"] = "Unable to confirm order.";
         return RedirectToAction(nameof(Index));
+    }
+
+    // POST: /Orders/ReadyForPickup/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReadyForPickup(int id, string? returnUrl)
+    {
+        var ok = await _orders.MarkReadyForPickupAsync(id);
+        TempData[ok ? "Message" : "Error"] = ok
+            ? "Order marked as ready for pickup."
+            : "Unable to mark order as ready for pickup.";
+        var redirectUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? returnUrl
+            : Url.Action(nameof(Details), new { id })!;
+        return Redirect(redirectUrl);
+    }
+
+    // POST: /Orders/MarkCollected/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarkCollected(int id, string? returnUrl)
+    {
+        var ok = await _orders.MarkCollectedAsync(id);
+        TempData[ok ? "Message" : "Error"] = ok
+            ? "Order marked as collected."
+            : "Unable to mark order as collected.";
+        var redirectUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? returnUrl
+            : Url.Action(nameof(Details), new { id })!;
+        return Redirect(redirectUrl);
     }
 
     // POST: /Orders/Cancel/5

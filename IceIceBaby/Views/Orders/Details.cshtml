@@ -6,7 +6,7 @@
 <section class="mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
         <h1 class="page-title mb-1">Order @Model.OrderNo</h1>
-        <p class="text-muted mb-0">Customer: @Model.Customer?.Name &bull; Status: @Model.Status &bull; Subtotal: @Model.Subtotal.ToString("C")</p>
+        <p class="text-muted mb-0">Customer: @Model.Customer?.Name &bull; Fulfilment: @Model.DeliveryType &bull; Status: @Model.Status &bull; Subtotal: @Model.Subtotal.ToString("C")</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-outline-primary" asp-controller="Orders" asp-action="Index">Back to Orders</a>
@@ -17,6 +17,21 @@
         }
     </div>
 </section>
+
+@if (TempData["Message"] is string msg)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @msg
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @err
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
 <section class="card border-0 shadow-soft p-4">
     <div class="table-responsive">
@@ -51,7 +66,21 @@
                 <button class="btn btn-success" type="submit">Confirm</button>
             </form>
         }
-        @if (Model.Status != IceIceBaby.Models.OrderStatus.Delivered)
+        @if (Model.DeliveryType == IceIceBaby.Models.DeliveryType.Pickup && Model.Status == IceIceBaby.Models.OrderStatus.Confirmed)
+        {
+            <form asp-action="ReadyForPickup" method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-warning" type="submit">Mark Ready for Pickup</button>
+            </form>
+        }
+        @if (Model.DeliveryType == IceIceBaby.Models.DeliveryType.Pickup && Model.Status == IceIceBaby.Models.OrderStatus.ReadyForPickup)
+        {
+            <form asp-action="MarkCollected" method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-primary" type="submit">Mark Collected</button>
+            </form>
+        }
+        @if (Model.Status != IceIceBaby.Models.OrderStatus.Delivered && Model.Status != IceIceBaby.Models.OrderStatus.PickedUp)
         {
             <form asp-action="Cancel" method="post">
                 <input type="hidden" name="id" value="@Model.Id" />

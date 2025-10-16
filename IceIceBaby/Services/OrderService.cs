@@ -53,8 +53,37 @@ public class OrderService : IOrderService
     {
         var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == orderId, ct);
         if (order == null) return false;
-        if (order.Status == OrderStatus.Delivered) return false;
+        if (order.Status == OrderStatus.Delivered || order.Status == OrderStatus.PickedUp) return false;
         order.Status = OrderStatus.Canceled;
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> MarkReadyForPickupAsync(int orderId, CancellationToken ct = default)
+    {
+        var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == orderId, ct);
+        if (order == null) return false;
+        if (order.DeliveryType != DeliveryType.Pickup) return false;
+        if (order.Status != OrderStatus.Confirmed && order.Status != OrderStatus.ReadyForPickup) return false;
+
+        order.Status = OrderStatus.ReadyForPickup;
+        order.PromisedAt ??= DateTimeOffset.Now;
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> MarkCollectedAsync(int orderId, CancellationToken ct = default)
+    {
+        var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == orderId, ct);
+        if (order == null) return false;
+        if (order.DeliveryType != DeliveryType.Pickup) return false;
+        if (order.Status != OrderStatus.ReadyForPickup && order.Status != OrderStatus.PickedUp) return false;
+
+        order.Status = OrderStatus.PickedUp;
+        if (order.PromisedAt == null)
+        {
+            order.PromisedAt = DateTimeOffset.Now;
+        }
         await _db.SaveChangesAsync(ct);
         return true;
     }

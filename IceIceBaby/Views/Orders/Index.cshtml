@@ -1,6 +1,10 @@
 @model IEnumerable<IceIceBaby.Models.Order>
+@using IceIceBaby.Models
 @{
     ViewData["Title"] = "Orders";
+    var pickupToPrep = Model.Where(o => o.DeliveryType == DeliveryType.Pickup && o.Status == OrderStatus.Confirmed).ToList();
+    var pickupReady = Model.Where(o => o.DeliveryType == DeliveryType.Pickup && o.Status == OrderStatus.ReadyForPickup).ToList();
+    var indexUrl = Url.Action("Index", "Orders");
 }
 
 <section class="mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
@@ -11,8 +15,100 @@
     <div class="d-flex gap-2">
         <a class="btn btn-primary" asp-controller="Orders" asp-action="Create">Create Order</a>
         <a class="btn btn-outline-primary" asp-controller="DeliveryRuns" asp-action="Create">Create Run</a>
+        <a class="btn btn-outline-secondary" asp-controller="Orders" asp-action="History">Order History</a>
     </div>
 </section>
+
+@if (TempData["Message"] is string msg)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @msg
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @err
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (pickupToPrep.Any() || pickupReady.Any())
+{
+    <section class="card border-0 shadow-soft p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h5 class="mb-1">Pickup queue</h5>
+                <p class="text-muted mb-0">Coordinate counter collections and keep customers moving.</p>
+            </div>
+        </div>
+        <div class="row row-cols-1 row-cols-md-2 g-3 mt-1">
+            <div class="col">
+                <div class="border rounded-3 h-100 p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold">To prep</span>
+                        <span class="badge bg-secondary">@pickupToPrep.Count</span>
+                    </div>
+                    @if (pickupToPrep.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var order in pickupToPrep.Take(8))
+                            {
+                                <li class="list-group-item px-0 d-flex justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <div class="fw-semibold">@order.OrderNo</div>
+                                        <div class="small text-muted">@order.Customer?.Name</div>
+                                    </div>
+                                    <form asp-action="ReadyForPickup" method="post" class="d-inline">
+                                        <input type="hidden" name="id" value="@order.Id" />
+                                        <input type="hidden" name="returnUrl" value="@indexUrl" />
+                                        <button class="btn btn-sm btn-outline-primary" type="submit">Ready</button>
+                                    </form>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="text-muted small">Counter is clear.</div>
+                    }
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded-3 h-100 p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold">Ready for pickup</span>
+                        <span class="badge bg-success">@pickupReady.Count</span>
+                    </div>
+                    @if (pickupReady.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var order in pickupReady.Take(8))
+                            {
+                                <li class="list-group-item px-0 d-flex justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <div class="fw-semibold">@order.OrderNo</div>
+                                        <div class="small text-muted">@order.Customer?.Name</div>
+                                    </div>
+                                    <form asp-action="MarkCollected" method="post" class="d-inline">
+                                        <input type="hidden" name="id" value="@order.Id" />
+                                        <input type="hidden" name="returnUrl" value="@indexUrl" />
+                                        <button class="btn btn-sm btn-success" type="submit">Collected</button>
+                                    </form>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="text-muted small">No orders waiting at the counter.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+}
 
 <section class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
     @foreach (var group in Model.GroupBy(o => o.Status).OrderBy(g => g.Key))

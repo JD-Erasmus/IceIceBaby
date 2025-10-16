@@ -1,16 +1,105 @@
+@model IceIceBaby.Models.PaymentsIndexViewModel
+@using System.Linq
 @{
     ViewData["Title"] = "Payments";
+    var outstandingTotal = Model.OutstandingOrders.Sum(o => o.Subtotal);
 }
 
 <section class="mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
         <h1 class="page-title mb-1">Payments</h1>
-        <p class="text-muted mb-0">Track receivables and reconcile customer balances.</p>
+        <p class="text-muted mb-0">Record settlements and keep an eye on outstanding balances.</p>
     </div>
     <a class="btn btn-primary" asp-controller="Payments" asp-action="Create">Record Payment</a>
 </section>
 
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @message
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<section class="card border-0 shadow-soft p-4 mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h5 class="mb-0">Outstanding orders</h5>
+        <div class="text-muted small">@Model.OutstandingOrders.Count outstanding &bull; Total @outstandingTotal.ToString("C")</div>
+    </div>
+    @if (Model.OutstandingOrders.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th class="text-end">Amount</th>
+                        <th>Status</th>
+                        <th>Promised</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model.OutstandingOrders)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@order.OrderNo</td>
+                            <td>@order.Customer?.Name</td>
+                            <td class="text-end">@order.Subtotal.ToString("C")</td>
+                            <td>@order.Status</td>
+                            <td>@(order.PromisedAt?.ToLocalTime().ToString("g") ?? "-")</td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-outline-primary" asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">View</a>
+                                <a class="btn btn-sm btn-success" asp-controller="Payments" asp-action="Create" asp-route-orderId="@order.Id">Record</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-success mb-0">All orders are up to date — no outstanding balances 🎉</div>
+    }
+</section>
+
 <section class="card border-0 shadow-soft p-4">
-    <h5 class="mb-3">Recent activity</h5>
-    <div class="alert alert-info mb-0">Hook up your finance data source to populate payment history and outstanding balances.</div>
+    <h5 class="mb-3">Recent payments</h5>
+    @if (Model.RecentPayments.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Order</th>
+                        <th class="text-end">Amount</th>
+                        <th>Method</th>
+                        <th>Recorded by</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var payment in Model.RecentPayments)
+                    {
+                        <tr>
+                            <td>@payment.PaidAt.ToLocalTime().ToString("g")</td>
+                            <td>
+                                <div class="fw-semibold">@(payment.Order?.OrderNo ?? $"#{payment.OrderId}")</div>
+                                <div class="small text-muted">@payment.Order?.Customer?.Name</div>
+                            </td>
+                            <td class="text-end">@payment.Amount.ToString("C")</td>
+                            <td>@payment.Method</td>
+                            <td>@(payment.RecordedBy ?? "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info mb-0">No payments recorded yet. Log one to start the trail.</div>
+    }
 </section>

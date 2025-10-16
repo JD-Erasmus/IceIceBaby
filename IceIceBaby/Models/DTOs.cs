@@ -43,3 +43,31 @@ public class CreateRunDto
     [MinLength(1, ErrorMessage = "Select at least one confirmed order")]
     public List<int> OrderIds { get; set; } = new();
 }
+
+public class RecordPaymentDto
+{
+    [Required]
+    [Display(Name = "Order")]
+    [Range(1, int.MaxValue, ErrorMessage = "Select an order to continue.")]
+    public int? OrderId { get; set; }
+
+    [Required]
+    [Range(0.01, 1000000, ErrorMessage = "Amount must be greater than zero.")]
+    public decimal Amount { get; set; }
+
+    [Required]
+    public PaymentMethod Method { get; set; }
+
+    [Display(Name = "Paid At")]
+    public DateTime PaidAt { get; set; } = DateTime.Now;
+}
+
+public class OrderHistoryFilter
+{
+    public string? Order { get; set; }
+    public string? Customer { get; set; }
+    public string? Status { get; set; }
+    public string? From { get; set; }
+    public string? To { get; set; }
+}
+

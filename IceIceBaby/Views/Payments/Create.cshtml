@@ -1,16 +1,53 @@
+@model IceIceBaby.Models.DTOs.RecordPaymentDto
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{
     ViewData["Title"] = "Record Payment";
+    var orders = ViewBag.OutstandingOrders as List<SelectListItem> ?? new();
 }
 
 <section class="mb-4">
     <h1 class="page-title mb-1">Record a payment</h1>
-    <p class="text-muted mb-0">Log payment information while finance integrations are being finalised.</p>
+    <p class="text-muted mb-0">Capture the settlement details to keep finance and fulfilment in sync.</p>
 </section>
 
 <form asp-action="Create" method="post" class="card border-0 shadow-soft p-4">
-    <div class="alert alert-info">Payment capture workflows are forthcoming. Use this stub to simulate finance reconciliation.</div>
-    <div class="d-flex flex-wrap gap-2">
-        <button type="submit" class="btn btn-success">Save (stub)</button>
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="OrderId" class="form-label">Order</label>
+            <select asp-for="OrderId" class="form-select" asp-items="orders">
+                <option value="">Select an order</option>
+            </select>
+            <span asp-validation-for="OrderId" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Amount" class="form-label">Amount</label>
+            <div class="input-group">
+                <span class="input-group-text">R</span>
+                <input asp-for="Amount" class="form-control" type="number" step="0.01" min="0" />
+            </div>
+            <span asp-validation-for="Amount" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Method" class="form-label">Method</label>
+            <select asp-for="Method" class="form-select" asp-items="Html.GetEnumSelectList<IceIceBaby.Models.PaymentMethod>()"></select>
+            <span asp-validation-for="Method" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="PaidAt" class="form-label">Paid at</label>
+            <input asp-for="PaidAt" class="form-control" type="datetime-local" />
+            <span asp-validation-for="PaidAt" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="alert alert-warning mt-4"><strong>Reminder:</strong> This MVP records a single payment per order and marks it fully paid.</div>
+
+    <div class="d-flex flex-wrap gap-2 mt-4">
+        <button type="submit" class="btn btn-success">Save Payment</button>
         <a class="btn btn-outline-primary" asp-controller="Payments" asp-action="Index">Cancel</a>
     </div>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
