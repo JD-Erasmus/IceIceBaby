@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using IceIceBaby.Data;
 using IceIceBaby.Models;
 using IceIceBaby.Models.DTOs;
@@ -26,7 +27,7 @@ public class DeliveryRunsController : Controller
         _db = db;
     }
 
-    private async Task LoadLookupsAsync()
+    private async Task LoadLookupsAsync(IEnumerable<int>? selectedOrderIds = null)
     {
         ViewBag.Drivers = await _db.Drivers
             .OrderBy(d => d.Name)
@@ -49,7 +50,8 @@ public class DeliveryRunsController : Controller
             .Select(o => new SelectListItem
             {
                 Value = o.Id.ToString(),
-                Text = $"{o.OrderNo} - {o.Customer!.Name} ({o.Subtotal:C})"
+                Text = $"{o.OrderNo} - {o.Customer!.Name} ({o.Subtotal:C})",
+                Selected = selectedOrderIds != null && selectedOrderIds.Contains(o.Id)
             })
             .ToListAsync();
         ViewBag.OpenOrders = openOrders;
@@ -63,10 +65,16 @@ public class DeliveryRunsController : Controller
     }
 
     // GET: /DeliveryRuns/Create
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(int? orderId)
     {
-        await LoadLookupsAsync();
-        return View(new CreateRunDto { RunDate = DateOnly.FromDateTime(DateTime.Now) });
+        var selectedOrderIds = orderId.HasValue ? new List<int> { orderId.Value } : null;
+        await LoadLookupsAsync(selectedOrderIds);
+        var dto = new CreateRunDto { RunDate = DateOnly.FromDateTime(DateTime.Now) };
+        if (orderId.HasValue)
+        {
+            dto.OrderIds.Add(orderId.Value);
+        }
+        return View(dto);
     }
 
     // POST: /DeliveryRuns/Create
@@ -76,7 +84,7 @@ public class DeliveryRunsController : Controller
     {
         if (!ModelState.IsValid)
         {
-            await LoadLookupsAsync();
+            await LoadLookupsAsync(dto.OrderIds);
             return View(dto);
         }
         try
@@ -88,7 +96,7 @@ public class DeliveryRunsController : Controller
         {
             _logger.LogError(ex, "Error creating run");
             ModelState.AddModelError(string.Empty, "Unable to create run.");
-            await LoadLookupsAsync();
+            await LoadLookupsAsync(dto.OrderIds);
             return View(dto);
         }
     }

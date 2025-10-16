@@ -30,7 +30,7 @@
         <select name="OrderIds" multiple class="form-select" size="8">
             @foreach (var o in openOrders)
             {
-                <option value="@o.Value">@o.Text</option>
+                <option value="@o.Value" selected="@(o.Selected ? "selected" : null)">@o.Text</option>
             }
         </select>
         <div class="form-text">Hold Ctrl/Cmd to select multiple.</div>

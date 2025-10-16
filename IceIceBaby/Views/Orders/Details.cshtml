@@ -7,6 +7,10 @@
     <div>
         <a class="btn btn-outline-secondary" href="@Url.Action("Index", "Orders")">Back to Orders</a>
         <a class="btn btn-outline-primary" href="@Url.Action("Invoice", new { id = Model.Id })">View Invoice</a>
+        @if (Model.Status == IceIceBaby.Models.OrderStatus.Confirmed)
+        {
+            <a class="btn btn-outline-success" asp-controller="DeliveryRuns" asp-action="Create" asp-route-orderId="@Model.Id">Create Run</a>
+        }
     </div>
 </div>
 <div class="mb-3 text-muted">Customer: @Model.Customer?.Name | Status: @Model.Status | Subtotal: @Model.Subtotal.ToString("C")</div>
