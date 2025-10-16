@@ -1,8 +1,71 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="card hero-card border-0 shadow-soft p-5">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <h1 class="page-title">Deliver cold perfection, every time.</h1>
+            <p class="section-subtitle mb-4">IceIceBaby keeps your fulfilment, delivery runs, and payments in lockstep so your customers always get the chill they expect.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary btn-lg" asp-controller="Dashboard" asp-action="Index">View Operations Dashboard</a>
+                <a class="btn btn-outline-primary btn-lg" asp-controller="Orders" asp-action="Create">Create New Order</a>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="bg-white rounded-4 p-4 shadow-soft h-100">
+                <h5 class="text-uppercase text-muted">Today's Snapshot</h5>
+                <div class="row row-cols-2 g-3 mt-1">
+                    <div class="col">
+                        <div class="card border-0 shadow-sm p-3 text-center">
+                            <span class="text-muted text-uppercase small">Open Orders</span>
+                            <div class="display-6 fw-bold text-primary">24</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card border-0 shadow-sm p-3 text-center">
+                            <span class="text-muted text-uppercase small">Runs Today</span>
+                            <div class="display-6 fw-bold text-primary">5</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card border-0 shadow-sm p-3 text-center">
+                            <span class="text-muted text-uppercase small">On-Time</span>
+                            <div class="display-6 fw-bold text-success">98%</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card border-0 shadow-sm p-3 text-center">
+                            <span class="text-muted text-uppercase small">Payments Pending</span>
+                            <div class="display-6 fw-bold text-warning">3</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="small text-muted mt-3 mb-0">* Data shown for illustration until real metrics are wired in.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="mt-5">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 p-4">
+                <h4>Streamlined Order Capture</h4>
+                <p class="mb-0 text-muted">Capture customer demand, configure delivery promises, and manage line items with modern, responsive forms built on Bootstrap.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 p-4">
+                <h4>Operational Control</h4>
+                <p class="mb-0 text-muted">Create and monitor delivery runs, assign drivers and vehicles, and track fulfilment progress from a single hub.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 p-4">
+                <h4>Financial Confidence</h4>
+                <p class="mb-0 text-muted">Log payments, issue invoices, and keep accounting stakeholders informed with clean, consistent UI patterns.</p>
+            </div>
+        </div>
+    </div>
+</section>
