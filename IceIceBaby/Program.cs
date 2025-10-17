@@ -25,14 +25,42 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
+//// Seed roles/users + product catalog
+//using (var scope = app.Services.CreateScope())
+//{
+//    var cfg = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+//        //// Run pending migrations
+//    await context.Database.MigrateAsync();
+//    await IdentitySeeder.SeedAsync(scope.ServiceProvider, cfg);
+
+//    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+//    await DataSeeder.SeedAsync(db);
+//}
+
+
 // Seed roles/users + product catalog
 using (var scope = app.Services.CreateScope())
 {
-    var cfg = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-    await IdentitySeeder.SeedAsync(scope.ServiceProvider, cfg);
+    var services = scope.ServiceProvider;
+    var cfg = services.GetRequiredService<IConfiguration>();
+    var db = services.GetRequiredService<ApplicationDbContext>();
 
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await DataSeeder.SeedAsync(db);
+    try
+    {
+        // Run pending migrations
+        await db.Database.MigrateAsync();
+
+        // Seed roles and users
+        await IdentitySeeder.SeedAsync(services, cfg);
+
+        // Seed product catalog or other data
+        await DataSeeder.SeedAsync(db);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database.");
+    }
 }
 
 // Configure the HTTP request pipeline.
